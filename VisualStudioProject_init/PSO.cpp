@@ -133,15 +133,41 @@ void InitialisationInformatrices(std::vector<tParticule> &unEssaim, tPSO &unPSO)
 	int i;
 	
 	//***** À DÉFINIR PAR L'ÉTUDIANT *****
-	//Méthode BIDON: une particule a comme informatrice seulement elle-même
-	unPSO.NbInfo = 1;		//À DÉTERMINER: le nombre d'informatrices par particules
+	//Le nombre d'informatrice est aléatoire à chaque exécution
+	//Les particules connues sont aleatoirement choisies dans la liste des particules
+
+
+	//nombre d'inormatrice fixe aleatoirement
+	//unPSO.NbInfo = AleaDouble(1, unPSO.Taille-1);
+	unPSO.NbInfo = 4;
 	for(i=0; i<unPSO.Taille; i++)
 	{
 		//Dimension du vecteur d'informatrices
 		unEssaim[i].Info.resize(unPSO.NbInfo);
 
-		//S'ajoute elle-même
-		unEssaim[i].Info[0] = & unEssaim[i];
+		
+		vector <int> neighbour_save;
+		neighbour_save.resize(unPSO.NbInfo);
+		for (int j=0; j<unPSO.NbInfo; j++)
+		{
+			bool ok = false;		
+			while(!ok){				
+				//Recuperer un rang aleatoire
+				int target = AleaDouble(0, unPSO.Taille-1);
+				
+				//s'assurer que ce rang n'est pas celui de la particule en question, ni qu'il existe deja dans la liste
+				if( (target != i ) &&
+					! (std::find(neighbour_save.begin(), neighbour_save.end(), target) != neighbour_save.end()) ) 
+				{
+
+					neighbour_save.insert(neighbour_save.end(), target);
+					ok = true;
+
+				}
+				unEssaim[i].Info[j] = & unEssaim[j];
+			}			
+		}
+		neighbour_save.clear();
 	}
 }
 
@@ -318,7 +344,7 @@ void AfficherUneSolution(tPosition Pos, int Iter, tProblem unProb)
 	cout << "SOL: ";
 	for(j=0; j<unProb.D; j++)
 	{
-		cout << setprecision(6) << setw(10) << Pos.X[j];
+		cout << setprecision(6) << setw(10) << Pos.X[j] << ' ';
 	}
 	cout <<  "\tFctObj: " << setw(10) << Pos.FctObj;
 	cout << endl;
