@@ -13,7 +13,7 @@
 #include <limits>
 using namespace std;
 
-enum eProb	{ALPINE, BANANE};
+enum eProb	{ALPINE, BANANE, EGGHOLDER};
 
 /* POUR TRAITER MAXCUT: ENLEVER LES COMMENTAIRES ET RETIRER L'AUTRE ENREGISTREMENT DE tProblem
 struct tArc

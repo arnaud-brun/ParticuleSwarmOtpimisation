@@ -90,6 +90,9 @@ void InitialisationIntervalleVariable(tProblem &unProb)
 	{
 		case ALPINE:	unProb.Xmin = -10.0;	unProb.Xmax = 10.0;	unProb.D = 2; break;
 		case BANANE:	unProb.Xmin = -10.0;	unProb.Xmax = 10.0;	unProb.D = 2; break;
+			// % modif % //
+		case EGGHOLDER: unProb.Xmin = -512.0;	unProb.Xmax =512.0; unProb.D = 2; break;
+			// end modif % //
 		default:		unProb.Xmin = 0.0;		unProb.Xmax = 0.0;	unProb.D = 0; break; 
 	}
 }
@@ -176,6 +179,16 @@ void EvaluationPosition(tPosition &Pos, tProblem unProb, tPSO &unPSO)
 					valeur += 100*xd*xd;
 				}
 				break;
+
+		// % modif % 
+		case EGGHOLDER: // Fonction coquetier. Optimun global -959.6407 en (512, 404.2319)			
+			xd = -(Pos.X[1] + 47);
+			som1 += xd*sin(sqrt(fabs(Pos.X[1] + Pos.X[0]/2 + 47)));
+			som2 += Pos.X[0]*sin(sqrt(fabs(Pos.X[0] + xd)));
+			valeur += som1 - som2;
+			break;
+		// % END modif %
+
 		default: valeur = FLT_MAX;
 	}
 	Pos.FctObj = valeur;
@@ -321,12 +334,18 @@ void AfficherResultats (tPosition uneBest, tProblem unProb, tPSO unPSO)
 	cout << "                                    RESULTATS FINAUX" << endl;
 	cout << "===============================================================================" <<endl;
 	cout << "FONCTION: " ;
+
+	//modif write to file 
+	ofstream myfile;
+	
 	switch (unProb.Fonction)
 	{
-		case ALPINE: cout << "ALPINE"; break;
-		case BANANE: cout << "BANANE"; break;
+		case ALPINE: cout << "ALPINE"; myfile.open("ALPINE/ALPINE"+to_string(unPSO.NbInfo)); break;
+		case BANANE: cout << "BANANE"; myfile.open("BANANE/BANANE"+to_string(unPSO.NbInfo)); break;
+		case EGGHOLDER: cout << "EGGHOLDER"; myfile.open("EGGHOLDER/EGGHOLDER"+to_string(unPSO.NbInfo)); break; // EGGHOLDER function
 		default: cout << " a definir...";
 	}
+	//console display
 	cout << endl; 
 	cout << "PARAMETRES" << endl;
 	cout << "Taille : " << unPSO.Taille << "\tC1: " << setprecision(6) << unPSO.C1 
@@ -337,6 +356,19 @@ void AfficherResultats (tPosition uneBest, tProblem unProb, tPSO unPSO)
 	cout << "Nombre Total d'evaluations : " << unPSO.CptEval << "/" << unPSO.NB_EVAL_MAX << endl;
 	cout << "Meilleure solution trouvee: "  << setprecision(6) << uneBest.FctObj << endl; 
 	cout << endl << "===============================================================================" << endl;
+	
+	//file zriting
+	myfile << endl; 
+	myfile << "PARAMETRES" << endl;
+	myfile << "Taille : " << unPSO.Taille << "\tC1: " << setprecision(6) << unPSO.C1 
+		 << "\tC2: " << setprecision(6) << unPSO.C2 << "\tC3: " << setprecision(6) << unPSO.C3 
+		 << "\tNbInfo: " << setprecision(2) << unPSO.NbInfo << endl; 
+	myfile << "===============================================================================" << endl; 
+	myfile << "Nombre d iterations effectuees : " << unPSO.Iter << endl;
+	myfile << "Nombre Total d'evaluations : " << unPSO.CptEval << "/" << unPSO.NB_EVAL_MAX << endl;
+	myfile << "Meilleure solution trouvee: "  << setprecision(6) << uneBest.FctObj << endl; 
+	myfile << endl << "===============================================================================" << endl;
+	myfile.close();
 }
 
 //**-----------------------------------------------------------------------
