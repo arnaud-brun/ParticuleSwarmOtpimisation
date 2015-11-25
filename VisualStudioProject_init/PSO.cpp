@@ -26,11 +26,38 @@ void LibererMemoireFinPgm (std::vector<tParticule> &unEssaim, tProblem unProb, t
 void LectureProblemeMAXCUT(std::string FileName, tProblem & unProb, tPSO &unPSO);
 void AfficherProblemeMAXCUT (tProblem unProb);
 */
+
+
+// % modif % //
+//Prorotype de la fonction run 
+int run(int NbParam, char *Param[]);
+/* 
+Fonction main annexe pour automatiser le processus 
+Appelle 100 fois la fonction run avec les memes parametres
+*/
+int main(){
+
+	int status = 0;
+	char* args[] = {" bidon", "30", "0.7", "2.0", "2.0", "8000"};
+
+	for(int i=0; i<100; i++){
+		status = run(5, args);
+		if (status != 0){
+			cout << "ERROR in run termination";
+		}
+	}
+	system("PAUSE");
+	return 0;
+}
+
+
+
 //******************************************************************************************
-// Fonction main
-//*****************************************************************************************
-int main(int NbParam, char *Param[])
+// Fonction main initiale transformée en fonction normale afin d'automatiser le processus d'anlayse
+//******************************************************************************************
+int run(int NbParam, char *Param[])
 {
+	// % modif end % //
 	tProblem LeProb;					//**Définition de l'instance de problème
 	tPSO LePSO;							//**Définition des paramètres du PSO
 	std::vector<tParticule> Essaim;		//**Ensemble de solutions 
@@ -78,7 +105,7 @@ int main(int NbParam, char *Param[])
 	AfficherResultats (Best, LeProb, LePSO);		//**NE PAS ENLEVER
 	LibererMemoireFinPgm(Essaim, LeProb, LePSO);
 
-	system("PAUSE");
+	//qsystem("PAUSE");
 	return 0;
 }
 
@@ -92,7 +119,7 @@ void InitialisationIntervalleVariable(tProblem &unProb)
 		case BANANE:	unProb.Xmin = -10.0;	unProb.Xmax = 10.0;	unProb.D = 2; break;
 			// % modif % //
 		case EGGHOLDER: unProb.Xmin = -512.0;	unProb.Xmax =512.0; unProb.D = 2; break;
-			// end modif % //
+			// % modif end % //
 		default:		unProb.Xmin = 0.0;		unProb.Xmax = 0.0;	unProb.D = 0; break; 
 	}
 }
@@ -139,35 +166,53 @@ void InitialisationInformatrices(std::vector<tParticule> &unEssaim, tPSO &unPSO)
 
 	//nombre d'inormatrice fixe aleatoirement
 	//unPSO.NbInfo = AleaDouble(1, unPSO.Taille-1);
+
+	//Nombre d'informatrice fixé par particule : 4
 	unPSO.NbInfo = 4;
 	for(i=0; i<unPSO.Taille; i++)
 	{
 		//Dimension du vecteur d'informatrices
 		unEssaim[i].Info.resize(unPSO.NbInfo);
-
 		
+
+		// % modif % //
+		/*
+		Alocation aléatoire des informatrices à chaque particule parmis les unPSO.NbInfo informatrices disponibles
+		--> Création d'un vecteur pour enregistrer les informatrices de la particule
+		--> Toutes les informatrices d'une particules sont différentes
+		--> La particule ne peut pas être sa propre informatrice
+		*/
+
+		//Définition du vecteur de sauvegarde des informatrices connues par une particule
 		vector <int> neighbour_save;
 		neighbour_save.resize(unPSO.NbInfo);
+
 		for (int j=0; j<unPSO.NbInfo; j++)
 		{
 			bool ok = false;		
 			while(!ok){				
-				//Recuperer un rang aleatoire
+				//Recuperer un index de particule aleatoire
 				int target = AleaDouble(0, unPSO.Taille-1);
 				
-				//s'assurer que ce rang n'est pas celui de la particule en question, ni qu'il existe deja dans la liste
+				//s'assurer que cet index n'est pas celui de la particule en question, ni qu'il existe deja dans la liste
 				if( (target != i ) &&
 					! (std::find(neighbour_save.begin(), neighbour_save.end(), target) != neighbour_save.end()) ) 
 				{
-
+					//Ajouter cet index de particule à la liste des informatrices de la particule
 					neighbour_save.insert(neighbour_save.end(), target);
 					ok = true;
 
 				}
+
+				//Ajouter cet index a la liste des informatrices de la particule
 				unEssaim[i].Info[j] = & unEssaim[j];
 			}			
 		}
+
+		//Reset de la liste des particules pour le traitement de la particule suivante
 		neighbour_save.clear();
+
+		// % modif end % //
 	}
 }
 
@@ -207,13 +252,13 @@ void EvaluationPosition(tPosition &Pos, tProblem unProb, tPSO &unPSO)
 				break;
 
 		// % modif % 
-		case EGGHOLDER: // Fonction coquetier. Optimun global -959.6407 en (512, 404.2319)			
+		case EGGHOLDER: // Fonction coquetier/boite d'oeufs. Optimun global -959.6407 en (512, 404.2319)			
 			xd = -(Pos.X[1] + 47);
 			som1 += xd*sin(sqrt(fabs(Pos.X[1] + Pos.X[0]/2 + 47)));
 			som2 += Pos.X[0]*sin(sqrt(fabs(Pos.X[0] + xd)));
 			valeur += som1 - som2;
 			break;
-		// % END modif %
+		// % modif end %
 
 		default: valeur = FLT_MAX;
 	}
@@ -344,7 +389,10 @@ void AfficherUneSolution(tPosition Pos, int Iter, tProblem unProb)
 	cout << "SOL: ";
 	for(j=0; j<unProb.D; j++)
 	{
+		// % modif % //
+		// Ajout d'un espace dans l'affichage pour differencier les dimensions
 		cout << setprecision(6) << setw(10) << Pos.X[j] << ' ';
+		// % modif end % //
 	}
 	cout <<  "\tFctObj: " << setw(10) << Pos.FctObj;
 	cout << endl;
@@ -361,16 +409,19 @@ void AfficherResultats (tPosition uneBest, tProblem unProb, tPSO unPSO)
 	cout << "===============================================================================" <<endl;
 	cout << "FONCTION: " ;
 
-	//modif write to file 
-	ofstream myfile;
+	// % modif % //
+	ofstream myfile;	//Generer un flux de fichier pour sauvegarder les résultats en vue d'une analyse future
 	
 	switch (unProb.Fonction)
 	{
-		case ALPINE: cout << "ALPINE"; myfile.open("ALPINE/ALPINE"+to_string(unPSO.NbInfo)); break;
-		case BANANE: cout << "BANANE"; myfile.open("BANANE/BANANE"+to_string(unPSO.NbInfo)); break;
-		case EGGHOLDER: cout << "EGGHOLDER"; myfile.open("EGGHOLDER/EGGHOLDER"+to_string(unPSO.NbInfo)); break; // EGGHOLDER function
+		//Chaque type de fonction ecrit dans un fichier spécifique
+		case ALPINE: cout << "ALPINE"; myfile.open("alpine_res.txt", ios_base::app); break;
+		case BANANE: cout << "BANANE"; myfile.open("banane_res.txt", ios_base::app); break;
+		case EGGHOLDER: cout << "EGGHOLDER"; myfile.open("eggholder_res.txt", ios_base::app); break;
 		default: cout << " a definir...";
 	}
+	// % modif end % //
+
 	//console display
 	cout << endl; 
 	cout << "PARAMETRES" << endl;
@@ -383,8 +434,10 @@ void AfficherResultats (tPosition uneBest, tProblem unProb, tPSO unPSO)
 	cout << "Meilleure solution trouvee: "  << setprecision(6) << uneBest.FctObj << endl; 
 	cout << endl << "===============================================================================" << endl;
 	
-	//file zriting
+	// % modif % //
+	//Ecriture en fichier avec precision à 10 chiffres
 	myfile << endl; 
+	myfile << endl << "!!!!!" << endl;
 	myfile << "PARAMETRES" << endl;
 	myfile << "Taille : " << unPSO.Taille << "\tC1: " << setprecision(6) << unPSO.C1 
 		 << "\tC2: " << setprecision(6) << unPSO.C2 << "\tC3: " << setprecision(6) << unPSO.C3 
@@ -392,9 +445,10 @@ void AfficherResultats (tPosition uneBest, tProblem unProb, tPSO unPSO)
 	myfile << "===============================================================================" << endl; 
 	myfile << "Nombre d iterations effectuees : " << unPSO.Iter << endl;
 	myfile << "Nombre Total d'evaluations : " << unPSO.CptEval << "/" << unPSO.NB_EVAL_MAX << endl;
-	myfile << "Meilleure solution trouvee: "  << setprecision(6) << uneBest.FctObj << endl; 
+	myfile << "Meilleure solution trouvee: "  << setprecision(10) << uneBest.FctObj << endl; 
 	myfile << endl << "===============================================================================" << endl;
 	myfile.close();
+	// % modif end % //
 }
 
 //**-----------------------------------------------------------------------
