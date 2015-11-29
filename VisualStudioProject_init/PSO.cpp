@@ -29,8 +29,11 @@ void AfficherProblemeMAXCUT (tProblem unProb);
 
 
 // % modif % //
-//Prorotype de la fonction run 
-int run(int NbParam, char *Param[]);
+
+int run(int NbParam, char *Param[]);	//Prorotype de la fonction run 
+int analyse(int function_choice, int nb_run);		//Fonction d'analyse du fichier généré
+
+
 /* 
 Fonction main annexe pour automatiser le processus 
 Appelle 100 fois la fonction run avec les memes parametres
@@ -38,18 +41,94 @@ Appelle 100 fois la fonction run avec les memes parametres
 int main(){
 
 	int status = 0;
-	char* args[] = {" bidon", "30", "0.7", "2.0", "2.0", "8000"};
+	int nb_iter = 50;
+	/*
+	arg1 = fonction : 0 <=> ALPINE / 1 <=> BANANE / 2 <=> EGGHOLDER
+	arg2 = taille
+	arg3 = C1
+	arg4 = C2
+	arg5 = C3
+	arg6 = nb_eval
+	*/
+	char* args[] = {"0", "30", "0.7", "1.6", "1.6", "10000"};
 
-	for(int i=0; i<100; i++){
+	
+	for(int i=0; i<nb_iter; i++){
 		status = run(5, args);
 		if (status != 0){
 			cout << "ERROR in run termination";
 		}
 	}
+	
+	
+	
+	analyse(ALPINE, nb_iter);
 	system("PAUSE");
 	return 0;
 }
 
+
+int analyse(int function_choice, int nb_run){
+
+	cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl << "ANALYSE " << endl;
+
+	ifstream myfile;	//Generer un flux de fichier pour sauvegarder les résultats en vue d'une analyse future
+	string name_file;	//Gérer le nom du fichier
+	
+	switch (function_choice)
+	{
+		//Chaque type de fonction ecrit dans un fichier spécifique
+		case ALPINE: cout << "ALPINE"; name_file = "alpine_res.txt"; break;
+		case BANANE: cout << "BANANE"; name_file = "banane_res.txt"; break;
+		case EGGHOLDER: cout << "EGGHOLDER"; name_file = "eggholder_res.txt"; break;
+		default: cout << " a definir..."; return -1;
+	}
+
+	myfile.open(name_file);
+
+	cout << endl;
+
+	int index = 1;
+	vector <double> best_solutions;
+	if(myfile){	
+		
+		while(myfile){
+			string line;
+			getline(myfile, line);
+			if (strcmp(line.c_str(), "\n") != 0) {
+				best_solutions.resize(index, strtod(line.c_str(), NULL));
+				index++;
+			}
+		}
+	}
+
+	myfile.close();
+	if( remove(name_file.c_str()) != 0 )
+		perror( "Error deleting file" );
+	else
+		puts( "File successfully deleted" );
+
+
+	index = 0;
+	vector<double>::iterator it;
+	double mean = 0.0;
+	
+	cout << "CHECK VECTOR : " <<endl;
+	for(it=best_solutions.begin(); it<best_solutions.end(); it++){
+		cout << index << " : " << *it << endl;
+		mean += *it;
+		index++;
+	}
+
+	mean = mean/index;
+	cout << "MEAN on " << index-1 << " runs : ";
+	cout << fixed << showpoint;
+	cout << setprecision(12);
+	cout << mean << endl;
+
+	return 0;
+
+}
 
 
 //******************************************************************************************
@@ -78,8 +157,8 @@ int run(int NbParam, char *Param[])
 	srand((unsigned) time(NULL));			//**Precise un germe pour le generateur aleatoire
 	cout.setf(ios::fixed|ios::showpoint);
 	
-	//**Spécifications du problème à traiter
-	LeProb.Fonction = ALPINE;				//**Spécifie le problème traité
+	//**Spécifications du problème à traiter, passé en paramètre
+	LeProb.Fonction = static_cast<eProb>(atoi(Param[0]));				
 	InitialisationIntervalleVariable(LeProb);
 	
 	//**Lecture du fichier de MAXCUT
@@ -436,17 +515,7 @@ void AfficherResultats (tPosition uneBest, tProblem unProb, tPSO unPSO)
 	
 	// % modif % //
 	//Ecriture en fichier avec precision à 10 chiffres
-	myfile << endl; 
-	myfile << endl << "!!!!!" << endl;
-	myfile << "PARAMETRES" << endl;
-	myfile << "Taille : " << unPSO.Taille << "\tC1: " << setprecision(6) << unPSO.C1 
-		 << "\tC2: " << setprecision(6) << unPSO.C2 << "\tC3: " << setprecision(6) << unPSO.C3 
-		 << "\tNbInfo: " << setprecision(2) << unPSO.NbInfo << endl; 
-	myfile << "===============================================================================" << endl; 
-	myfile << "Nombre d iterations effectuees : " << unPSO.Iter << endl;
-	myfile << "Nombre Total d'evaluations : " << unPSO.CptEval << "/" << unPSO.NB_EVAL_MAX << endl;
-	myfile << "Meilleure solution trouvee: "  << setprecision(10) << uneBest.FctObj << endl; 
-	myfile << endl << "===============================================================================" << endl;
+	myfile << setprecision(6) << uneBest.FctObj << endl; 
 	myfile.close();
 	// % modif end % //
 }
