@@ -29,9 +29,8 @@ void AfficherProblemeMAXCUT (tProblem unProb);
 
 
 // % modif % //
-
-int run(int NbParam, char *Param[]);	//Prorotype de la fonction run 
-int analyse(int function_choice, int nb_run);		//Fonction d'analyse du fichier généré
+int run(int NbParam, char *Param[]);				//Prorotype de la fonction run : ancien main
+int analyse(int function_choice, int nb_run);		//Fonction d'analyse du fichier mis à jour par les appels de la fonction run
 
 
 /* 
@@ -41,7 +40,7 @@ Appelle 100 fois la fonction run avec les memes parametres
 int main(){
 
 	int status = 0;
-	int nb_iter = 50;
+	int nb_iter = 3;
 	/*
 	arg1 = fonction : 0 <=> ALPINE / 1 <=> BANANE / 2 <=> EGGHOLDER
 	arg2 = taille
@@ -50,9 +49,9 @@ int main(){
 	arg5 = C3
 	arg6 = nb_eval
 	*/
-	char* args[] = {"0", "30", "0.7", "1.6", "1.6", "10000"};
+	char* args[] = {"2", "30", "0.7", "2.0", "2.0", "10000"};
 
-	
+	//exécuter nb_iter fois la fonction run
 	for(int i=0; i<nb_iter; i++){
 		status = run(5, args);
 		if (status != 0){
@@ -60,41 +59,44 @@ int main(){
 		}
 	}
 	
-	
-	
-	analyse(ALPINE, nb_iter);
+	//Analyse des résultats issus des exécutions	
+	analyse(EGGHOLDER, nb_iter);
+
 	system("PAUSE");
 	return 0;
 }
 
 
+//Fonction d'analyse des résultats de l'exécution
 int analyse(int function_choice, int nb_run){
 
 	cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl << "ANALYSE " << endl;
 
-	ifstream myfile;	//Generer un flux de fichier pour sauvegarder les résultats en vue d'une analyse future
+	ifstream myfile;	//Créer un flux pour accéder au fichier
 	string name_file;	//Gérer le nom du fichier
 	
 	switch (function_choice)
 	{
-		//Chaque type de fonction ecrit dans un fichier spécifique
+		//Chaque type de fonction ecrit dans un fichier spécifique : récupérer ce fichier
 		case ALPINE: cout << "ALPINE"; name_file = "alpine_res.txt"; break;
 		case BANANE: cout << "BANANE"; name_file = "banane_res.txt"; break;
 		case EGGHOLDER: cout << "EGGHOLDER"; name_file = "eggholder_res.txt"; break;
 		default: cout << " a definir..."; return -1;
 	}
 
+	//Ouverture du fichier associé a la fonction
 	myfile.open(name_file);
 
 	cout << endl;
 
+	//parcours dans le fichier pour récupérer les différents résultats des différents appels
 	int index = 1;
 	vector <double> best_solutions;
-	if(myfile){	
-		
+	if(myfile){			
 		while(myfile){
 			string line;
 			getline(myfile, line);
+			//Stockage des résultats des exécutions dans un vecteur
 			if (strcmp(line.c_str(), "\n") != 0) {
 				best_solutions.resize(index, strtod(line.c_str(), NULL));
 				index++;
@@ -102,33 +104,75 @@ int analyse(int function_choice, int nb_run){
 		}
 	}
 
+	//fermeture et suppression du fichier généré par les exécutions
 	myfile.close();
 	if( remove(name_file.c_str()) != 0 )
 		perror( "Error deleting file" );
 	else
 		puts( "File successfully deleted" );
 
-
-	index = 0;
-	vector<double>::iterator it;
-	double mean = 0.0;
-	
+	//Calcul de la moyenne des résultats de chaque exécution + stockage dans un fichier
 	cout << "CHECK VECTOR : " <<endl;
-	for(it=best_solutions.begin(); it<best_solutions.end(); it++){
-		cout << index << " : " << *it << endl;
-		mean += *it;
-		index++;
+	double nb_iter = 0.0;
+	double mean = 0.0;
+	vector<double>::iterator it;
+
+	int opened = -1;
+	ofstream result_file;
+	if (strcmp(name_file.c_str(), "alpine_res.txt") == 0){
+		result_file.open("ALPINE_EXECUTION.txt");
+		opened = 1;
 	}
 
-	mean = mean/index;
-	cout << "MEAN on " << index-1 << " runs : ";
+	if (strcmp(name_file.c_str(), "banane_res.txt") == 0){
+		result_file.open("BANANE_EXECUTION.txt");
+		opened = 1;
+	}
+
+	if (strcmp(name_file.c_str(), "eggholder_res.txt") == 0){
+		result_file.open("EGGHOLDER_EXECUTION.txt");
+		opened = 1;
+	}
+
+	if (opened != 1){
+		cout << "fail to open result file for execution";
+		return -1;
+	}
+	
+	//Réglage de la precision d'affichage
 	cout << fixed << showpoint;
 	cout << setprecision(12);
+
+	result_file << fixed << showpoint;
+	result_file << setprecision(12);
+
+	
+	for(it=best_solutions.begin(); it<best_solutions.end(); it++){
+		
+		//on s'assure de respecter le nombre de run !
+		if (nb_iter < nb_run){
+			cout << nb_iter << " : " << *it << endl;
+			result_file << *it << endl;
+			mean += *it;
+		}
+		nb_iter += 1.0;
+	}
+	nb_iter -= 1.0;
+	mean = mean/(nb_iter);
+
+	//Affichage de la moyenne calculée avec 12 chiffres après la virgule
+	cout << "MEAN on " << nb_run << " runs : ";
 	cout << mean << endl;
+	result_file << "MOYENNE : " << mean << endl;
+
+	result_file.close();
+
+
 
 	return 0;
 
 }
+// % modif end % //
 
 
 //******************************************************************************************
@@ -136,7 +180,7 @@ int analyse(int function_choice, int nb_run){
 //******************************************************************************************
 int run(int NbParam, char *Param[])
 {
-	// % modif end % //
+	
 	tProblem LeProb;					//**Définition de l'instance de problème
 	tPSO LePSO;							//**Définition des paramètres du PSO
 	std::vector<tParticule> Essaim;		//**Ensemble de solutions 
@@ -157,8 +201,10 @@ int run(int NbParam, char *Param[])
 	srand((unsigned) time(NULL));			//**Precise un germe pour le generateur aleatoire
 	cout.setf(ios::fixed|ios::showpoint);
 	
+	// % modif //
 	//**Spécifications du problème à traiter, passé en paramètre
 	LeProb.Fonction = static_cast<eProb>(atoi(Param[0]));				
+	// % end modif % //
 	InitialisationIntervalleVariable(LeProb);
 	
 	//**Lecture du fichier de MAXCUT
@@ -514,7 +560,7 @@ void AfficherResultats (tPosition uneBest, tProblem unProb, tPSO unPSO)
 	cout << endl << "===============================================================================" << endl;
 	
 	// % modif % //
-	//Ecriture en fichier avec precision à 10 chiffres
+	//Ecriture dans le fichier de résultat de l'exécution
 	myfile << setprecision(6) << uneBest.FctObj << endl; 
 	myfile.close();
 	// % modif end % //
