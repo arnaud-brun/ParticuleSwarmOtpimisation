@@ -57,7 +57,7 @@ int main(){
 	/* Exécution classique */
 	//char* args[] = {"2", "30", "0.7", "2.0", "2.0", "10000"};
 	/* Exécution MAXCUT */
-	char* args[] = {"3", "20", "0.8", "1.5", "1.5", "10000", "Cuttest.txt"};
+	char* args[] = {"3", "30", "0.9", "1.7", "1.7", "10000", "G1.txt"};
 
 
 	for(int i=0; i<nb_iter; i++){
