@@ -13,9 +13,9 @@
 #include <limits>
 using namespace std;
 
-enum eProb	{ALPINE, BANANE, EGGHOLDER};
+enum eProb	{ALPINE, BANANE, EGGHOLDER, MAXCUT};
 
-/* POUR TRAITER MAXCUT: ENLEVER LES COMMENTAIRES ET RETIRER L'AUTRE ENREGISTREMENT DE tProblem
+/* POUR TRAITER MAXCUT: ENLEVER LES COMMENTAIRES ET RETIRER L'AUTRE ENREGISTREMENT DE tProblem */
 struct tArc
 {
 	int Ni;										//Noeud départ de l'arc NB: 0 à NbNoeud-1 
@@ -33,8 +33,9 @@ struct tProblem									//**Définition du problème de MAXCUT:
 	int NbNoeud;								//**Nbre de noeuds dans l'instance NB: numérotés de 0 à NbNoeud-1
 	int NbArc;									//**Nbre d'arcs dans l'instance  NB: numérotés de 0 à NbArc-1
 	std::vector <tArc> Arc;						//**Définition de chaque arc. NB: Tableaux de 0 à NbArc-1. 
-};*/
+};
 
+/*
 struct tProblem									//**Définition pour fonction continue:
 {
 	eProb	Fonction;							//**Nom de la fonction ou du problème à traiter
@@ -42,6 +43,7 @@ struct tProblem									//**Définition pour fonction continue:
 	double	Xmin;								//**Domaine des variables: valeur minimale 
 	double	Xmax;								//**Domaine des variables: valeur maximale
 };
+*/
 
 struct tPosition								//**Définition de la position d'une particule: 
 {

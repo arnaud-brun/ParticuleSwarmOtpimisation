@@ -22,10 +22,10 @@ void AfficherSolutions(std::vector<tParticule> unEssaim, int Debut, int Fin, int
 void AfficherUneSolution(tPosition P, int Iter, tProblem unProb);
 void AfficherResultats (tPosition uneBest, tProblem unProb, tPSO unPSO);
 void LibererMemoireFinPgm (std::vector<tParticule> &unEssaim, tProblem unProb, tPSO unPSO);
-/* ### POUR MAXCUT
+/* ### POUR MAXCUT */
 void LectureProblemeMAXCUT(std::string FileName, tProblem & unProb, tPSO &unPSO);
 void AfficherProblemeMAXCUT (tProblem unProb);
-*/
+
 
 
 // % modif % //
@@ -40,34 +40,51 @@ Appelle 100 fois la fonction run avec les memes parametres
 int main(){
 
 	int status = 0;
-	int nb_iter = 3;
+
+	/* Nombre d'appel souhaité de la fonction run */
+	int nb_iter = 1;
+
 	/*
-	arg1 = fonction : 0 <=> ALPINE / 1 <=> BANANE / 2 <=> EGGHOLDER
+	Définiton des paramètres pour l'exécution de la fonction run :
+	arg1 = fonction : 0 <=> ALPINE / 1 <=> BANANE / 2 <=> EGGHOLDER / 3  <=> MAXCUT
 	arg2 = taille
 	arg3 = C1
 	arg4 = C2
 	arg5 = C3
 	arg6 = nb_eval
+	arg7 = nom du fichier à lancer pour maxcut
 	*/
-	char* args[] = {"2", "30", "0.7", "2.0", "2.0", "10000"};
+	/* Exécution classique */
+	//char* args[] = {"2", "30", "0.7", "2.0", "2.0", "10000"};
+	/* Exécution MAXCUT */
+	char* args[] = {"3", "20", "0.8", "1.5", "1.5", "10000", "Cuttest.txt"};
 
-	//exécuter nb_iter fois la fonction run
+
 	for(int i=0; i<nb_iter; i++){
-		status = run(5, args);
+		/* Exécution normale */
+		//status = run(5, args);
+		/* Exécution de MAXCUT */
+		status = run(6 , args);
+
 		if (status != 0){
 			cout << "ERROR in run termination";
 		}
 	}
 	
 	//Analyse des résultats issus des exécutions	
-	analyse(EGGHOLDER, nb_iter);
+	//analyse(EGGHOLDER, nb_iter);
 
 	system("PAUSE");
 	return 0;
 }
 
 
-//Fonction d'analyse des résultats de l'exécution
+//Fonction d'analyse des résultats retournés par les différents appels à la fonction run
+/*
+Crée un fichier texte spécifique à l'analyse des résultat d'une fonction 
+Sauvegarde en fichier des différents résultats finaux de chaque exécution
+Sauvegarde en fichier de la moyenne obtenu sur les exécution
+*/
 int analyse(int function_choice, int nb_run){
 
 	cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl << "ANALYSE " << endl;
@@ -111,7 +128,11 @@ int analyse(int function_choice, int nb_run){
 	else
 		puts( "File successfully deleted" );
 
-	//Calcul de la moyenne des résultats de chaque exécution + stockage dans un fichier
+	/*
+	Création du fichier spécifique à la sauvegarde des exécutions
+	Sauvegarde des différentes exécution
+	Sauvegarde de la moyenne 
+	*/
 	cout << "CHECK VECTOR : " <<endl;
 	double nb_iter = 0.0;
 	double mean = 0.0;
@@ -143,32 +164,29 @@ int analyse(int function_choice, int nb_run){
 	cout << fixed << showpoint;
 	cout << setprecision(12);
 
+	//Réglage de la precision d'affichage dans le fichier
 	result_file << fixed << showpoint;
 	result_file << setprecision(12);
-
 	
+	//Parcours des solutions précédemment trouvées + sauvegarde en fichier
 	for(it=best_solutions.begin(); it<best_solutions.end(); it++){
-		
-		//on s'assure de respecter le nombre de run !
 		if (nb_iter < nb_run){
 			cout << nb_iter << " : " << *it << endl;
-			result_file << *it << endl;
+			// result_file << *it << endl; // A activer si on veut sauvegarder une solution
 			mean += *it;
 		}
 		nb_iter += 1.0;
 	}
+
+	// Calcul de la moyenne
 	nb_iter -= 1.0;
 	mean = mean/(nb_iter);
 
-	//Affichage de la moyenne calculée avec 12 chiffres après la virgule
 	cout << "MEAN on " << nb_run << " runs : ";
 	cout << mean << endl;
-	result_file << "MOYENNE : " << mean << endl;
+	//result_file << "MOYENNE : " << mean << endl; // A activer si on veut sauvegarder une solution
 
 	result_file.close();
-
-
-
 	return 0;
 
 }
@@ -186,51 +204,70 @@ int run(int NbParam, char *Param[])
 	std::vector<tParticule> Essaim;		//**Ensemble de solutions 
 	tPosition Best;						//**Meilleure solution depuis le début de l'algorithme
 	
-	//string NomFichier;					//### Pour MAXCUT
+	string NomFichier;					//### Pour MAXCUT
 	
 	//**Lecture des paramètres
+
+	//**Spécifications du problème à traiter, passé en paramètre
+	LeProb.Fonction = static_cast<eProb>(atoi(Param[0]));	
+
 	LePSO.Taille		= atoi(Param[1]);
 	LePSO.C1			= atof(Param[2]);
 	LePSO.C2			= atof(Param[3]);
 	LePSO.C3			= atof(Param[4]);
 	LePSO.NB_EVAL_MAX	= atoi(Param[5]);
-	//NomFichier.assign(Param[6]);			//### Pour MAXCUT
+
+	//### Pour MAXCUT
+	if (LeProb.Fonction == MAXCUT)
+		NomFichier.assign(Param[6]);
+
 	LePSO.Iter			= 0;
 	LePSO.CptEval		= 0;
 		
 	srand((unsigned) time(NULL));			//**Precise un germe pour le generateur aleatoire
 	cout.setf(ios::fixed|ios::showpoint);
 	
-	// % modif //
-	//**Spécifications du problème à traiter, passé en paramètre
-	LeProb.Fonction = static_cast<eProb>(atoi(Param[0]));				
-	// % end modif % //
 	InitialisationIntervalleVariable(LeProb);
-	
+
+	//### Pour MAXCUT
 	//**Lecture du fichier de MAXCUT
-	//LectureProblemeMAXCUT(NomFichier, LeProb, LePSO);			//### Pour MAXCUT
-	//AfficherProblemeMAXCUT(LeProb);							//### Pour MAXCUT
+	if (LeProb.Fonction == MAXCUT){
+		LectureProblemeMAXCUT(NomFichier, LeProb, LePSO);			
+		AfficherProblemeMAXCUT(LeProb);
+	}
+
 	
 	//**Dimension du tableaux de l'essaim selon le nombre de particules
 	Best = InitialisationEssaim(Essaim, LeProb, LePSO);
 	InitialisationInformatrices(Essaim, LePSO);
 
-	//AfficherSolutions(Essaim, 0, LePSO.Taille, LePSO.Iter, LeProb);
-	AfficherUneSolution(Best, LePSO.Iter, LeProb);
+	// Obtenir la bonne fonction d'affichage selon la fonction à analyser
+	if (LeProb.Fonction == MAXCUT)
+		AfficherSolutions(Essaim, 0, LePSO.Taille, LePSO.Iter, LeProb);
+	else
+		AfficherUneSolution(Best, LePSO.Iter, LeProb);
+
+
 
 	//**Boucle principale du PSO
 	while (LePSO.CptEval < LePSO.NB_EVAL_MAX) 	//**NE PAS ENLEVER LA CONDITION SUR LE NOMBRE D'ÉVALUATION
 	{																									
 		LePSO.Iter++;
 		DeplacerEssaim(Essaim, LeProb, LePSO, Best);  
-		//AfficherSolutions(Essaim, 0, LePSO.Taille, LePSO.Iter, LeProb);
-		AfficherUneSolution(Best, LePSO.Iter, LeProb);
+		
+		// Obtenir la bonne fonction d'affichage selon la fonction à analyser
+		if (LeProb.Fonction == MAXCUT)
+			AfficherSolutions(Essaim, 0, LePSO.Taille, LePSO.Iter, LeProb);
+		else
+			AfficherUneSolution(Best, LePSO.Iter, LeProb);
+
+		cout << LePSO.CptEval << endl;
 	};
 
 	AfficherResultats (Best, LeProb, LePSO);		//**NE PAS ENLEVER
 	LibererMemoireFinPgm(Essaim, LeProb, LePSO);
 
-	//qsystem("PAUSE");
+	//system("PAUSE"); // Pause mise au niveau du main
 	return 0;
 }
 
@@ -242,9 +279,20 @@ void InitialisationIntervalleVariable(tProblem &unProb)
 	{
 		case ALPINE:	unProb.Xmin = -10.0;	unProb.Xmax = 10.0;	unProb.D = 2; break;
 		case BANANE:	unProb.Xmin = -10.0;	unProb.Xmax = 10.0;	unProb.D = 2; break;
-			// % modif % //
-		case EGGHOLDER: unProb.Xmin = -512.0;	unProb.Xmax =512.0; unProb.D = 2; break;
-			// % modif end % //
+			
+		// % modif % //
+		case EGGHOLDER: 
+			unProb.Xmin = -512.0;
+			unProb.Xmax =512.0; 
+			unProb.D = 2; 
+			break;
+		case MAXCUT:	
+			unProb.Xmin = 0;
+			unProb.Xmax = 1; 
+			//unProb.D déjà fixé par la lecture du fichier MAXCUT
+			break;
+		// % modif end % //
+
 		default:		unProb.Xmin = 0.0;		unProb.Xmax = 0.0;	unProb.D = 0; break; 
 	}
 }
@@ -271,8 +319,17 @@ tPosition InitialisationEssaim(std::vector<tParticule> &unEssaim, tProblem unPro
 		if (i == 0)	
 			Meilleure = unEssaim[i].Pos;
 		else
-			if (unEssaim[i].Pos.FctObj < Meilleure.FctObj)
-				Meilleure = unEssaim[i].Pos;
+			// % modif % //
+			if (unProb.Fonction == MAXCUT)
+				/* MAXCUT, on doit maximiser la fonction objectif */
+				if (unEssaim[i].Pos.FctObj > Meilleure.FctObj)
+					Meilleure = unEssaim[i].Pos;
+			
+			else
+				/* Cas normal : on doit minimser la fonction objectif */
+				if (unEssaim[i].Pos.FctObj < Meilleure.FctObj)
+					Meilleure = unEssaim[i].Pos;
+			// % end modif % //
 	}
 	//Retourne la meilleure solution renontrée jusqu'à maintenant
 	return(Meilleure);
@@ -284,16 +341,7 @@ void InitialisationInformatrices(std::vector<tParticule> &unEssaim, tPSO &unPSO)
 {
 	int i;
 	
-	//***** À DÉFINIR PAR L'ÉTUDIANT *****
-	//Le nombre d'informatrice est aléatoire à chaque exécution
-	//Les particules connues sont aleatoirement choisies dans la liste des particules
-
-
-	//nombre d'inormatrice fixe aleatoirement
-	//unPSO.NbInfo = AleaDouble(1, unPSO.Taille-1);
-
-	//Nombre d'informatrice fixé par particule : 4
-	unPSO.NbInfo = 4;
+	unPSO.NbInfo = 4;	// Chaque particule aura 4 informatrices
 	for(i=0; i<unPSO.Taille; i++)
 	{
 		//Dimension du vecteur d'informatrices
@@ -336,7 +384,6 @@ void InitialisationInformatrices(std::vector<tParticule> &unEssaim, tPSO &unPSO)
 
 		//Reset de la liste des particules pour le traitement de la particule suivante
 		neighbour_save.clear();
-
 		// % modif end % //
 	}
 }
@@ -349,8 +396,29 @@ void InitialisationPositionEtVitesseAleatoire(tParticule &Particule, tProblem un
 
 	for(d=0; d<unProb.D; d++)
 	{
-		Particule.Pos.X[d] = AleaDouble(unProb.Xmin, unProb.Xmax);
-		Particule.V[d] = AleaDouble(unProb.Xmin, unProb.Xmax);
+		
+
+		// % modif % //
+		if (unProb.Fonction == MAXCUT ) {
+			/* Initialisation de la position soit à 0 soit à 1 */
+			Particule.Pos.X[d] = AleaDouble(unProb.Xmin, unProb.Xmax);
+
+			// Arondir à la valeur entière la plus proche
+			if (Particule.Pos.X[d] <= (unProb.Xmin + unProb.Xmax) )
+				Particule.Pos.X[d] = unProb.Xmin;
+			else
+				Particule.Pos.X[d] = unProb.Xmax;
+
+			//initialiser la vitesse aleatoirement sur l'intervalle toléré par la fonction sigmoidale : [-4;4]
+			Particule.V[d] = AleaDouble(-4, 4);
+
+		}
+		else{
+			/* Cas normal : on initialise avec des variables aléatoires */
+			Particule.Pos.X[d] = AleaDouble(unProb.Xmin, unProb.Xmax);
+			Particule.V[d] = AleaDouble(unProb.Xmin, unProb.Xmax);
+		}
+		// % end modif % //
 	}
 }
 
@@ -377,14 +445,41 @@ void EvaluationPosition(tPosition &Pos, tProblem unProb, tPSO &unPSO)
 				break;
 
 		// % modif % 
-		case EGGHOLDER: // Fonction coquetier/boite d'oeufs. Optimun global -959.6407 en (512, 404.2319)			
-			xd = -(Pos.X[1] + 47);
-			som1 += xd*sin(sqrt(fabs(Pos.X[1] + Pos.X[0]/2 + 47)));
-			som2 += Pos.X[0]*sin(sqrt(fabs(Pos.X[0] + xd)));
-			valeur += som1 - som2;
-			break;
-		// % modif end %
+		case EGGHOLDER: // Fonction coquetier/boite d'oeufs. 
+				//Optimun global -959.6407 en (512, 404.2319)			
+				xd = -(Pos.X[1] + 47);
+				som1 += xd*sin(sqrt(fabs(Pos.X[1] + Pos.X[0]/2 + 47)));
+				som2 += Pos.X[0]*sin(sqrt(fabs(Pos.X[0] + xd)));
+				valeur += som1 - som2;
+				break;
 
+		case MAXCUT: // Fonction maxcut : Calcul de la coupe maximale dans le graphe
+				/*
+				Pseudo code la fonction objectif
+					Pour chaque noeud (dimension) <d> de ma solution
+						Pour chaque Arc <a> du problème
+							si <d> est la source de l'arc <a> alors :
+								si le noeud <d'> destination de cet arc à une position différente de <d> alors :
+									Ajout du poids de l'arc à la solution
+								fsi
+							fsi
+						fpour
+					fpour
+				*/
+				for(d=0; d<unProb.D-1; d++){				
+					vector<tArc>::iterator current_arc;
+					for(current_arc = unProb.Arc.begin(); current_arc < unProb.Arc.end(); current_arc++){				
+
+						if (current_arc->Ni == d){
+							if (Pos.X[d] != Pos.X[current_arc->Nj]){							
+								valeur += current_arc->Poids;
+							}
+						}
+					}			
+				}
+				break;
+		
+		// % modif end %
 		default: valeur = FLT_MAX;
 	}
 	Pos.FctObj = valeur;
@@ -403,14 +498,31 @@ void DeplacerEssaim(std::vector<tParticule> &unEssaim, tProblem unProb, tPSO &un
 		//Évaluation de la nouvelle position-----------------------------
 		EvaluationPosition(unEssaim[i].Pos, unProb, unPSO);
 		
-		//Mise à jour de la meilleure position de la particule-----------
-		if(unEssaim[i].Pos.FctObj <= unEssaim[i].BestPos.FctObj)
-		{
-			unEssaim[i].BestPos = unEssaim[i].Pos;
-			//Mémorisation du meilleur résultat atteint jusqu'ici------------
-			if(unEssaim[i].BestPos.FctObj < Meilleure.FctObj)
-				Meilleure = unEssaim[i].BestPos;
+		//Mise à jour de la meilleure position de la particule-----------		
+
+		// % modif % //
+		// Prise en compte du cas MAXCUT : maximiser la meilleure solution
+		if (unProb.Fonction == MAXCUT){			
+			if(unEssaim[i].Pos.FctObj >= unEssaim[i].BestPos.FctObj){
+				unEssaim[i].BestPos = unEssaim[i].Pos;			
+
+				//Mémorisation du meilleur résultat atteint jusqu'ici pour MAXCUT ----
+				if(unEssaim[i].BestPos.FctObj > Meilleure.FctObj)
+					Meilleure = unEssaim[i].BestPos;
+			}
 		}
+		else{
+			// Cas normal : minimser
+			if(unEssaim[i].Pos.FctObj <= unEssaim[i].BestPos.FctObj)
+			{
+				unEssaim[i].BestPos = unEssaim[i].Pos;			
+				
+				//Mémorisation du meilleur résultat atteint jusqu'ici------------
+				if(unEssaim[i].BestPos.FctObj < Meilleure.FctObj)
+					Meilleure = unEssaim[i].BestPos;
+			}
+		}
+		// % end modif % //
 	}
 }
 
@@ -424,30 +536,73 @@ void DeplacerUneParticule(tParticule &Particule, tProblem unProb, tPSO &unPSO)
 	//Meilleure informatrice de la particule-----------------------------
 	MeilleureInfo = TrouverMeilleureInformatrice(Particule, unPSO);
 
-	//Calcul de la nouvelle vitesse--------------------------------------
-	for(d=0; d<unProb.D; d++)
-		Particule.V[d] =	unPSO.C1 * Particule.V[d] + 
-							AleaDouble(0,unPSO.C2) * (Particule.BestPos.X[d] - Particule.Pos.X[d]) + 
-							AleaDouble(0,unPSO.C3) * (MeilleureInfo->BestPos.X[d] - Particule.Pos.X[d]);
+	// % modif % //	
+	// Cas pour la mise a jour de particule sur Maxcut
+	if (unProb.Fonction == MAXCUT){
+		
+		vector<double> sigmoide;
+		sigmoide.resize(unProb.D);
 
-	//Mise à jour de la nouvelle position--------------------------------
-	for(d=0; d<unProb.D; d++)
-		Particule.Pos.X[d] += Particule.V[d];
+		// Calcul de la nouvelle vitesse + stockage de la sigmoide associée
+		for(d=0; d<unProb.D; d++){
+				Particule.V[d] =	unPSO.C1 * Particule.V[d] + 
+								AleaDouble(0,unPSO.C2) * (Particule.BestPos.X[d] - Particule.Pos.X[d]) + 
+								AleaDouble(0,unPSO.C3) * (MeilleureInfo->BestPos.X[d] - Particule.Pos.X[d]);
 
-	//Confinement d'intervalle pour la valeur des positions--------------
-	for(int d=0; d<unProb.D; d++)
-	{
-		if(Particule.Pos.X[d] < unProb.Xmin)
-		{
-			Particule.Pos.X[d] = unProb.Xmin;
-			Particule.V[d] = 0; //Remise à zéro de la vitesse
+				// Confinement de la vitesse sur l'intervalle [-4; 4]
+				if (Particule.V[d] < -4.0){
+					Particule.V[d] = -4.0;
+				}
+				if (Particule.V[d] > 4.0){
+					Particule.V[d] = 4.0;
+				}
+
+				// Calcul de la fonction sigmoidale associée à la vitesse
+				double sigmo_tmp = 1.0 / (1.0 + exp(-Particule.V[d]));
+				sigmoide[d] = sigmo_tmp;
 		}
-		if(Particule.Pos.X[d] > unProb.Xmax)
+
+		// MAJ de la position de la particule :
+		for(int d=0; d<unProb.D; d++)
 		{
-			Particule.Pos.X[d] = unProb.Xmax;
-			Particule.V[d] = 0; //Remise à zéro de la vitesse
+			double proba = AleaDouble(0, 1); // Récupération d'une probabilité entre 0 et 1
+
+			// Comparaison de cette probabilité avec la valeur de la fonction sigmoidale associée sur la dimension d
+			if ( proba < sigmoide[d]){
+				Particule.Pos.X[d] = 1;	// Probabilité validée
+			}else{
+				Particule.Pos.X[d] = 0; // Probabilité non suffisante
+			}
 		}
 	}
+	else{
+		// Cas normal : fonction aux variables continues
+		//Calcul de la nouvelle vitesse--------------------------------------
+		for(d=0; d<unProb.D; d++)
+				Particule.V[d] =	unPSO.C1 * Particule.V[d] + 
+								AleaDouble(0,unPSO.C2) * (Particule.BestPos.X[d] - Particule.Pos.X[d]) + 
+								AleaDouble(0,unPSO.C3) * (MeilleureInfo->BestPos.X[d] - Particule.Pos.X[d]);
+
+		//Mise à jour de la nouvelle position--------------------------------
+		for(d=0; d<unProb.D; d++)
+			Particule.Pos.X[d] += Particule.V[d];
+
+		//Confinement d'intervalle pour la valeur des positions--------------
+		for(int d=0; d<unProb.D; d++)
+		{
+			if(Particule.Pos.X[d] < unProb.Xmin)
+			{
+				Particule.Pos.X[d] = unProb.Xmin;
+				Particule.V[d] = 0; //Remise à zéro de la vitesse
+			}
+			if(Particule.Pos.X[d] > unProb.Xmax)
+			{
+				Particule.Pos.X[d] = unProb.Xmax;
+				Particule.V[d] = 0; //Remise à zéro de la vitesse
+			}
+		}
+	}	
+	// % end modif % //
 }
 
 //-----------------------------------------------------------------------
@@ -492,14 +647,14 @@ void AfficherSolutions(std::vector<tParticule> unEssaim, int Debut, int Fin, int
 		{
 			cout << setprecision(6) << setw(10) << unEssaim[i].Pos.X[j];
 		}
-		cout <<  "\tFctObj: " << setw(10) << unEssaim[i].Pos.FctObj;
+		cout <<  endl << "\tFctObj: " << setw(10) << unEssaim[i].Pos.FctObj;
 		cout << endl;
 		cout << "BEST POS: " << i << "\t";
 		for(j=0; j<unProb.D; j++)
 		{
 			cout << setprecision(6) << setw(10) << unEssaim[i].BestPos.X[j];
 		}
-		cout <<  "\tFctObj: " << setw(10) << unEssaim[i].BestPos.FctObj;
+		cout <<  endl << "\tFctObj: " << setw(10) << unEssaim[i].BestPos.FctObj;
 		cout << endl;
 	}
 }
@@ -514,10 +669,7 @@ void AfficherUneSolution(tPosition Pos, int Iter, tProblem unProb)
 	cout << "SOL: ";
 	for(j=0; j<unProb.D; j++)
 	{
-		// % modif % //
-		// Ajout d'un espace dans l'affichage pour differencier les dimensions
 		cout << setprecision(6) << setw(10) << Pos.X[j] << ' ';
-		// % modif end % //
 	}
 	cout <<  "\tFctObj: " << setw(10) << Pos.FctObj;
 	cout << endl;
@@ -535,17 +687,21 @@ void AfficherResultats (tPosition uneBest, tProblem unProb, tPSO unPSO)
 	cout << "FONCTION: " ;
 
 	// % modif % //
-	ofstream myfile;	//Generer un flux de fichier pour sauvegarder les résultats en vue d'une analyse future
+	/* 
+	Permet le stockage en fichier des résultats d'un appel à la fonction run
+	Analyse de ce fichier de résultats par la suite, dans la fonction analyse(...)
+	*/
+	ofstream myfile;
 	
 	switch (unProb.Fonction)
 	{
-		//Chaque type de fonction ecrit dans un fichier spécifique
+		//Chaque type de fonction écrit dans un fichier spécifique
 		case ALPINE: cout << "ALPINE"; myfile.open("alpine_res.txt", ios_base::app); break;
 		case BANANE: cout << "BANANE"; myfile.open("banane_res.txt", ios_base::app); break;
 		case EGGHOLDER: cout << "EGGHOLDER"; myfile.open("eggholder_res.txt", ios_base::app); break;
+		case MAXCUT: cout << "MAXCUT"; myfile.open("maxcut_res.txt", ios_base::app);break;
 		default: cout << " a definir...";
 	}
-	// % modif end % //
 
 	//console display
 	cout << endl; 
@@ -558,8 +714,7 @@ void AfficherResultats (tPosition uneBest, tProblem unProb, tPSO unPSO)
 	cout << "Nombre Total d'evaluations : " << unPSO.CptEval << "/" << unPSO.NB_EVAL_MAX << endl;
 	cout << "Meilleure solution trouvee: "  << setprecision(6) << uneBest.FctObj << endl; 
 	cout << endl << "===============================================================================" << endl;
-	
-	// % modif % //
+
 	//Ecriture dans le fichier de résultat de l'exécution
 	myfile << setprecision(6) << uneBest.FctObj << endl; 
 	myfile.close();
@@ -582,10 +737,11 @@ void LibererMemoireFinPgm (std::vector<tParticule> &unEssaim, tProblem unProb, t
 	unEssaim.clear();
 }
 
+
+//**MAXCUT
 //**-----------------------------------------------------------------------
 //**Lecture du Fichier probleme MAXSAT et initialiation de la structure Problem
 //**NB: Lors de la lecture, le numéro des noeuds est transformé (0 à NbNoeud-1 AU LIEU de 1 à NbNoeud)
-/* ### POUR MAXCUT
 void LectureProblemeMAXCUT(std::string FileName, tProblem & unProb, tPSO &unPSO)
 {
 	ifstream	Fichier;
@@ -634,4 +790,3 @@ void AfficherProblemeMAXCUT (tProblem unProb)
 	cout << endl << "*******************************************************";
 	cout << endl << endl;
 }
-*/
